@@ -16,6 +16,8 @@
 
 package com.tencent.tinker.loader.shareutil;
 
+import android.content.Context;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -123,6 +125,61 @@ public class ShareReflectUtil {
         System.arraycopy(original, 0, combined, extraElements.length, original.length);
 
         jlrField.set(instance, combined);
+    }
+
+    /**
+     * Replace the value of a field containing a non null array, by a new array containing the
+     * elements of the original array plus the elements of extraElements.
+     *
+     * @param instance      the instance whose field is to be modified.
+     * @param fieldName     the field to modify.
+     */
+    public static void reduceFieldArray(Object instance, String fieldName, int reduceSize)
+        throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+        if (reduceSize <= 0) {
+            return;
+        }
+
+        Field jlrField = findField(instance, fieldName);
+
+        Object[] original = (Object[]) jlrField.get(instance);
+        int finalLength = original.length - reduceSize;
+
+        if (finalLength <= 0) {
+            return;
+        }
+
+        Object[] combined = (Object[]) Array.newInstance(original.getClass().getComponentType(), finalLength);
+
+        System.arraycopy(original, reduceSize, combined, 0, finalLength);
+
+        jlrField.set(instance, combined);
+    }
+
+    public static Object getActivityThread(Context context,
+                                            Class<?> activityThread) {
+        try {
+            if (activityThread == null) {
+                activityThread = Class.forName("android.app.ActivityThread");
+            }
+            Method m = activityThread.getMethod("currentActivityThread");
+            m.setAccessible(true);
+            Object currentActivityThread = m.invoke(null);
+            if (currentActivityThread == null && context != null) {
+                // In older versions of Android (prior to frameworks/base 66a017b63461a22842)
+                // the currentActivityThread was built on thread locals, so we'll need to try
+                // even harder
+                Field mLoadedApk = context.getClass().getField("mLoadedApk");
+                mLoadedApk.setAccessible(true);
+                Object apk = mLoadedApk.get(context);
+                Field mActivityThreadField = apk.getClass().getDeclaredField("mActivityThread");
+                mActivityThreadField.setAccessible(true);
+                currentActivityThread = mActivityThreadField.get(apk);
+            }
+            return currentActivityThread;
+        } catch (Throwable ignore) {
+            return null;
+        }
     }
 
 }

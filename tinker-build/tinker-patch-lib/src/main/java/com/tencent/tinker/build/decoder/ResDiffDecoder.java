@@ -17,6 +17,7 @@
 package com.tencent.tinker.build.decoder;
 
 import com.tencent.tinker.bsdiff.BSDiff;
+import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.info.InfoWriter;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.FileOperation;
@@ -41,6 +42,8 @@ import java.util.HashSet;
  * Created by zhangshaowen on 16/8/8.
  */
 public class ResDiffDecoder extends BaseDecoder {
+    private static final String TEST_RESOURCE_NAME        = "only_use_to_test_tinker_resource.txt";
+    private static final String TEST_RESOURCE_ASSETS_PATH = "assets/" + TEST_RESOURCE_NAME;
 
     private static final String TEMP_RES_ZIP  = "temp_res.zip";
     private static final String TEMP_RES_7ZIP = "temp_res_7ZIP.zip";
@@ -80,8 +83,8 @@ public class ResDiffDecoder extends BaseDecoder {
     }
 
     private boolean checkLargeModFile(File file) {
-        long lenght = file.length();
-        if (lenght > config.mLargeModSize * TypedValue.K_BYTES) {
+        long length = file.length();
+        if (length > config.mLargeModSize * TypedValue.K_BYTES) {
             return true;
         }
         return false;
@@ -89,14 +92,16 @@ public class ResDiffDecoder extends BaseDecoder {
 
     @Override
     public boolean patch(File oldFile, File newFile) throws IOException, TinkerPatchException {
+        String name = getRelativePathStringToNewFile(newFile);
+
         //actually, it won't go below
         if (newFile == null || !newFile.exists()) {
-            String name = getRelativeStringByOldDir(oldFile);
-            if (Utils.checkFileInPattern(config.mResIgnoreChangePattern, name)) {
-                Logger.e("found delete resource: " + name + " ,but it match ignore change pattern, just ignore!");
+            String relativeStringByOldDir = getRelativePathStringToOldFile(oldFile);
+            if (Utils.checkFileInPattern(config.mResIgnoreChangePattern, relativeStringByOldDir)) {
+                Logger.e("found delete resource: " + relativeStringByOldDir + " ,but it match ignore change pattern, just ignore!");
                 return false;
             }
-            deletedSet.add(name);
+            deletedSet.add(relativeStringByOldDir);
             writeResLog(newFile, oldFile, TypedValue.DEL);
             return true;
         }
@@ -104,7 +109,6 @@ public class ResDiffDecoder extends BaseDecoder {
         File outputFile = getOutputPath(newFile).toFile();
 
         if (oldFile == null || !oldFile.exists()) {
-            String name = getRelativeString(newFile);
             if (Utils.checkFileInPattern(config.mResIgnoreChangePattern, name)) {
                 Logger.e("found add resource: " + name + " ,but it match ignore change pattern, just ignore!");
                 return false;
@@ -126,15 +130,25 @@ public class ResDiffDecoder extends BaseDecoder {
         if (oldMd5 != null && oldMd5.equals(newMd5)) {
             return false;
         }
-        String name = getRelativeString(newFile);
         if (Utils.checkFileInPattern(config.mResIgnoreChangePattern, name)) {
-            Logger.e("found modify resource: " + name + " ,but it match ignore change pattern, just ignore!");
+            Logger.d("found modify resource: " + name + ", but it match ignore change pattern, just ignore!");
             return false;
         }
         if (name.equals(TypedValue.RES_MANIFEST)) {
-            Logger.e("found modify resource: " + name + " ,but it is AndroidManifest.xml, just ignore!");
+            Logger.d("found modify resource: " + name + ", but it is AndroidManifest.xml, just ignore!");
             return false;
         }
+        if (name.equals(TypedValue.RES_ARSC)) {
+            if (AndroidParser.resourceTableLogicalChange(config)) {
+                Logger.d("found modify resource: " + name + ", but it is logically the same as original new resources.arsc, just ignore!");
+                return false;
+            }
+        }
+        dealWithModeFile(name, newMd5, oldFile, newFile, outputFile);
+        return true;
+    }
+
+    private boolean dealWithModeFile(String name, String newMd5, File oldFile, File newFile, File outputFile) throws IOException {
         if (checkLargeModFile(newFile)) {
             if (!outputFile.getParentFile().exists()) {
                 outputFile.getParentFile().mkdirs();
@@ -155,7 +169,7 @@ public class ResDiffDecoder extends BaseDecoder {
         modifiedSet.add(name);
         FileOperation.copyFileUsingStream(newFile, outputFile);
         writeResLog(newFile, oldFile, TypedValue.MOD);
-        return true;
+        return false;
     }
 
     private void writeResLog(File newFile, File oldFile, int mode) throws IOException {
@@ -164,25 +178,25 @@ public class ResDiffDecoder extends BaseDecoder {
             String relative;
             switch (mode) {
                 case TypedValue.ADD:
-                    relative = getRelativeString(newFile);
+                    relative = getRelativePathStringToNewFile(newFile);
                     Logger.d("Found add resource: " + relative);
                     log = "add resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
                         + FileOperation.getFileSizes(newFile);
                     break;
                 case TypedValue.MOD:
-                    relative = getRelativeString(newFile);
+                    relative = getRelativePathStringToNewFile(newFile);
                     Logger.d("Found modify resource: " + relative);
                     log = "modify resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
                         + FileOperation.getFileSizes(newFile);
                     break;
                 case TypedValue.DEL:
-                    relative = getRelativeStringByOldDir(oldFile);
+                    relative = getRelativePathStringToOldFile(oldFile);
                     Logger.d("Found deleted resource: " + relative);
                     log = "deleted resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
                         + FileOperation.getFileSizes(newFile);
                     break;
                 case TypedValue.LARGE_MOD:
-                    relative = getRelativeString(newFile);
+                    relative = getRelativePathStringToNewFile(newFile);
                     Logger.d("Found large modify resource: " + relative + " size:" + newFile.length());
                     log = "large modify resource: " + relative + ", oldSize=" + FileOperation.getFileSizes(oldFile) + ", newSize="
                         + FileOperation.getFileSizes(newFile);
@@ -195,6 +209,16 @@ public class ResDiffDecoder extends BaseDecoder {
     @Override
     public void onAllPatchesStart() throws IOException, TinkerPatchException {
 
+    }
+
+    private void addAssetsFileForTestResource() throws IOException {
+        File dest = new File(config.mTempResultDir + "/" + TEST_RESOURCE_ASSETS_PATH);
+        FileOperation.copyResourceUsingStream(TEST_RESOURCE_NAME, dest);
+        addedSet.add(TEST_RESOURCE_ASSETS_PATH);
+        Logger.d("Add Test resource file: " + TEST_RESOURCE_ASSETS_PATH);
+        String log = "add test resource: " + TEST_RESOURCE_ASSETS_PATH + ", oldSize=" + 0 + ", newSize="
+            + FileOperation.getFileSizes(dest);
+        logWriter.writeLineToInfoFile(log);
     }
 
     @Override
@@ -213,10 +237,9 @@ public class ResDiffDecoder extends BaseDecoder {
 
         //check gradle build
         if (config.mUsingGradle) {
+            final boolean ignoreWarning = config.mIgnoreWarning;
             final boolean resourceArscChanged = modifiedSet.contains(TypedValue.RES_ARSC)
                 || largeModifiedSet.contains(TypedValue.RES_ARSC);
-            final boolean ignoreWarning = config.mIgnoreWarning;
-
             if (resourceArscChanged && !config.mUseApplyResource) {
                 if (ignoreWarning) {
                     //ignoreWarning, just log
@@ -249,6 +272,9 @@ public class ResDiffDecoder extends BaseDecoder {
         removeIgnoreChangeFile(addedSet);
         removeIgnoreChangeFile(largeModifiedSet);
 
+        // last add test res in assets for user cannot ignore it;
+        addAssetsFileForTestResource();
+
         File tempResZip = new File(config.mOutFolder + File.separator + TEMP_RES_ZIP);
         final File tempResFiles = config.mTempResultDir;
 
@@ -259,9 +285,9 @@ public class ResDiffDecoder extends BaseDecoder {
         String resZipMd5 = Utils.genResOutputFile(extractToZip, tempResZip, config,
             addedSet, modifiedSet, deletedSet, largeModifiedSet, largeModifiedMap);
 
-        Logger.e("final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5);
+        Logger.e("Final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5);
         logWriter.writeLineToInfoFile(
-            String.format("final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5)
+            String.format("Final normal zip resource: %s, size=%d, md5=%s", extractToZip.getName(), extractToZip.length(), resZipMd5)
         );
         //delete temp file
         FileOperation.deleteFile(tempResZip);
@@ -279,9 +305,9 @@ public class ResDiffDecoder extends BaseDecoder {
                     addedSet, modifiedSet, deletedSet, largeModifiedSet, largeModifiedMap);
                 //delete temp file
                 FileOperation.deleteFile(tempRes7Zip);
-                Logger.e("final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5);
+                Logger.e("Final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5);
                 logWriter.writeLineToInfoFile(
-                    String.format("final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5)
+                    String.format("Final 7zip resource: %s, size=%d, md5=%s", extractTo7Zip.getName(), extractTo7Zip.length(), res7zipMd5)
                 );
             }
         }
@@ -396,7 +422,7 @@ public class ResDiffDecoder extends BaseDecoder {
             if (Utils.checkFileInPattern(config.mResFilePattern, patternKey)) {
                 //not contain in new path, is deleted
                 if (!newPath.toFile().exists()) {
-                    deletedFiles.add(relativePath.toString());
+                    deletedFiles.add(patternKey);
                     writeResLog(newPath.toFile(), file.toFile(), TypedValue.DEL);
                 }
                 return FileVisitResult.CONTINUE;

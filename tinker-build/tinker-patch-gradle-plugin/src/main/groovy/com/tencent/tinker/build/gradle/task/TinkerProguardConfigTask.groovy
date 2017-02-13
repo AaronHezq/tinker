@@ -86,10 +86,14 @@ public class TinkerProguardConfigTask extends DefaultTask {
         }
 
         fr.write(PROGUARD_CONFIG_SETTINGS)
+
         fr.write("#your dex.loader patterns here\n")
         //they will removed when apply
         Iterable<String> loader = project.extensions.tinkerPatch.dex.loader
         for (String pattern : loader) {
+            if (pattern.endsWith("*") && !pattern.endsWith("**")) {
+                pattern += "*"
+            }
             fr.write("-keep class " + pattern)
             fr.write("\n")
         }
@@ -97,6 +101,7 @@ public class TinkerProguardConfigTask extends DefaultTask {
         // Add this proguard settings file to the list
         applicationVariant.getBuildType().buildType.proguardFiles(file)
         def files = applicationVariant.getBuildType().buildType.getProguardFiles()
+
         project.logger.error("now proguard files is ${files}")
     }
 }

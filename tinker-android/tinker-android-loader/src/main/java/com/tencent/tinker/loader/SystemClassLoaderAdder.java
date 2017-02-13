@@ -48,6 +48,7 @@ public class SystemClassLoaderAdder {
     private static final String CHECK_DEX_CLASS = "com.tencent.tinker.loader.TinkerTestDexLoad";
     private static final String CHECK_DEX_FIELD = "isPatch";
 
+    private static int sPatchDexCount = 0;
 
     @SuppressLint("NewApi")
     public static void installDexes(Application application, PathClassLoader loader, File dexOptDir, List<File> files)
@@ -69,15 +70,39 @@ public class SystemClassLoaderAdder {
             } else {
                 V4.install(classLoader, files, dexOptDir);
             }
+            //install done
+            sPatchDexCount = files.size();
+            Log.i(TAG, "after loaded classloader: " + classLoader + ", dex size:" + sPatchDexCount);
 
-            if (!checkDexInstall()) {
+            if (!checkDexInstall(classLoader)) {
+                //reset patch dex
+                SystemClassLoaderAdder.uninstallPatchDex(classLoader);
                 throw new TinkerRuntimeException(ShareConstants.CHECK_DEX_INSTALL_FAIL);
             }
         }
     }
 
-    private static boolean checkDexInstall() throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-        Class<?> clazz = Class.forName(CHECK_DEX_CLASS);
+    public static void uninstallPatchDex(ClassLoader classLoader) throws Throwable {
+        if (sPatchDexCount <= 0) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 14) {
+            Field pathListField = ShareReflectUtil.findField(classLoader, "pathList");
+            Object dexPathList = pathListField.get(classLoader);
+            ShareReflectUtil.reduceFieldArray(dexPathList, "dexElements", sPatchDexCount);
+        } else {
+            ShareReflectUtil.reduceFieldArray(classLoader, "mPaths", sPatchDexCount);
+            ShareReflectUtil.reduceFieldArray(classLoader, "mFiles", sPatchDexCount);
+            ShareReflectUtil.reduceFieldArray(classLoader, "mZips", sPatchDexCount);
+            try {
+                ShareReflectUtil.reduceFieldArray(classLoader, "mDexs", sPatchDexCount);
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    private static boolean checkDexInstall(ClassLoader classLoader) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+        Class<?> clazz = Class.forName(CHECK_DEX_CLASS, true, classLoader);
         Field filed = ShareReflectUtil.findField(clazz, CHECK_DEX_FIELD);
         boolean isPatch = (boolean) filed.get(null);
         Log.w(TAG, "checkDexInstall result:" + isPatch);
@@ -85,7 +110,7 @@ public class SystemClassLoaderAdder {
     }
 
     /**
-     * Installer for platform versions 19.
+     * Installer for platform versions 23.
      */
     private static final class V23 {
 

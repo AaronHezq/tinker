@@ -31,7 +31,7 @@ public class TinkerPatchExtension {
     String oldApk
 
     /**
-     * if there is loader class changes,
+     * If there is loader class changes,
      * or Activity, Service, Receiver, Provider change, it will terminal
      * if ignoreWarning is false
      * default: false
@@ -39,29 +39,42 @@ public class TinkerPatchExtension {
     boolean ignoreWarning
 
     /**
-     * if sign the patch file with the android signConfig
+     * If sign the patch file with the android signConfig
      * default: true
      */
     boolean useSign
+
+    /**
+     * whether use tinker
+     * default: true
+     */
+    boolean tinkerEnable
 
     public TinkerPatchExtension() {
         oldApk = ""
         ignoreWarning = false
         useSign = true
+        tinkerEnable = true
     }
 
     void checkParameter() {
         if (oldApk == null) {
             throw new GradleException("old apk is null, you must set the correct old apk value!")
-        } else if (!new File(oldApk).exists()) {
-            throw new GradleException("old apk ${oldApk} is not exist, you must set the correct old apk value!")
         }
+        File apk = new File(oldApk)
+        if (!apk.exists()) {
+            throw new GradleException("old apk ${oldApk} is not exist, you must set the correct old apk value!")
+        } else if (!apk.isFile()) {
+            throw new GradleException("old apk ${oldApk} is a directory, you must set the correct old apk value!")
+        }
+
     }
 
     @Override
     public String toString() {
         """| oldApk = ${oldApk}
            | ignoreWarning = ${ignoreWarning}
+           | tinkerEnable = ${tinkerEnable}
            | useSign = ${useSign}
         """.stripMargin()
     }

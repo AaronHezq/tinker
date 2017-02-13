@@ -31,6 +31,7 @@ public class TinkerDexExtension {
      * default: raw, keep the orginal file type
      */
     String dexMode;
+
     /**
      * the dex file patterns, which dex or jar files will be deal to gen patch
      * such as [classes.dex, classes-*.dex, assets/multiDex/*.jar]
@@ -42,6 +43,8 @@ public class TinkerDexExtension {
      * such as [com.tencent.tinker.loader.*, com.tinker.sample.MyApplication]
      */
     Iterable<String> loader;
+
+
     private Project project;
 
     public TinkerDexExtension(Project project) {

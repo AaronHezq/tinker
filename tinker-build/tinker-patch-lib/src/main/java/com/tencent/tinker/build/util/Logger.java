@@ -34,7 +34,9 @@ public class Logger {
     }
 
     public static void closeLogger() {
-        logWriter.close();
+        if (logWriter != null) {
+            logWriter.close();
+        }
     }
 
     public static void d(final String msg) {
@@ -49,6 +51,7 @@ public class Logger {
         }
         //add \n
         System.out.printf(log + "\n");
+        System.out.flush();
 
         logWriter.writeLineToInfoFile(log);
     }
@@ -64,8 +67,9 @@ public class Logger {
         }
         //add \n
         System.err.printf(log + "\n");
-        logWriter.writeLineToInfoFile(log);
+        System.err.flush();
 
+        logWriter.writeLineToInfoFile(log);
     }
 
 }

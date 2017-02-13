@@ -30,7 +30,7 @@ public class TinkerPatchSchemaTask extends DefaultTask {
     def android
     String buildApkPath
     String outputFolder
-    def signconfig
+    def signConfig
 
     public TinkerPatchSchemaTask() {
         description = 'Assemble Tinker Patch'
@@ -44,8 +44,6 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
     @TaskAction
     def tinkerPatch() {
-//        println configuration.toString()
-
         configuration.checkParameter()
         configuration.buildConfig.checkParameter()
         configuration.res.checkParameter()
@@ -54,13 +52,13 @@ public class TinkerPatchSchemaTask extends DefaultTask {
 
         InputParam.Builder builder = new InputParam.Builder()
         if (configuration.useSign) {
-            if (signconfig == null) {
-                throw new GradleException("can't the get signconfig for ${taskName} build")
+            if (signConfig == null) {
+                throw new GradleException("can't the get signConfig for this build")
             }
-            builder.setSignFile(signconfig.storeFile)
-                    .setKeypass(signconfig.keyPassword)
-                    .setStorealias(signconfig.keyAlias)
-                    .setStorepass(signconfig.storePassword)
+            builder.setSignFile(signConfig.storeFile)
+                    .setKeypass(signConfig.keyPassword)
+                    .setStorealias(signConfig.keyAlias)
+                    .setStorepass(signConfig.storePassword)
 
         }
 
@@ -68,15 +66,15 @@ public class TinkerPatchSchemaTask extends DefaultTask {
                .setNewApk(buildApkPath)
                .setOutBuilder(outputFolder)
                .setIgnoreWarning(configuration.ignoreWarning)
-               .setDexFilePattern(configuration.dex.pattern)
-               .setDexLoaderPattern(configuration.dex.loader)
+               .setDexFilePattern(new ArrayList<String>(configuration.dex.pattern))
+               .setDexLoaderPattern(new ArrayList<String>(configuration.dex.loader))
                .setDexMode(configuration.dex.dexMode)
-               .setSoFilePattern(configuration.lib.pattern)
-               .setResourceFilePattern(configuration.res.pattern)
-               .setResourceIgnoreChangePattern(configuration.res.ignoreChange)
+               .setSoFilePattern(new ArrayList<String>(configuration.lib.pattern))
+               .setResourceFilePattern(new ArrayList<String>(configuration.res.pattern))
+               .setResourceIgnoreChangePattern(new ArrayList<String>(configuration.res.ignoreChange))
                .setResourceLargeModSize(configuration.res.largeModSize)
                .setUseApplyResource(configuration.buildConfig.usingResourceMapping)
-               .setConfigFields(configuration.packageConfig.getFields())
+               .setConfigFields(new HashMap<String, String>(configuration.packageConfig.getFields()))
                .setSevenZipPath(configuration.sevenZip.path)
                .setUseSign(configuration.useSign)
 

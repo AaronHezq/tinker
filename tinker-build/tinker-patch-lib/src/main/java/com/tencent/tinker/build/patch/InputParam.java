@@ -270,25 +270,25 @@ public class InputParam {
 
         public InputParam create() {
             return new InputParam(
-                oldApk,
-                newApk,
-                outFolder,
-                signFile,
-                keypass,
-                storealias,
-                storepass,
-                ignoreWarning,
-                useSign,
-                dexFilePattern,
-                dexLoaderPattern,
-                dexMode,
-                soFilePattern,
-                resourceFilePattern,
-                resourceIgnoreChangePattern,
-                largeModSize,
-                useApplyResource,
-                configFields,
-                sevenZipPath
+                    oldApk,
+                    newApk,
+                    outFolder,
+                    signFile,
+                    keypass,
+                    storealias,
+                    storepass,
+                    ignoreWarning,
+                    useSign,
+                    dexFilePattern,
+                    dexLoaderPattern,
+                    dexMode,
+                    soFilePattern,
+                    resourceFilePattern,
+                    resourceIgnoreChangePattern,
+                    largeModSize,
+                    useApplyResource,
+                    configFields,
+                    sevenZipPath
             );
         }
     }

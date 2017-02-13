@@ -36,9 +36,8 @@ public interface LoadReporter {
      *                  {@code ShareConstants.ERROR_PATCH_NOTEXIST}            the file of tempPatchPatch file is not exist
      *                  {@code ShareConstants.ERROR_PATCH_RUNNING}             the recover service is running now, try later
      *                  {@code ShareConstants.ERROR_PATCH_INSERVICE}           the recover service can't send patch request
-     * @param isUpgrade whether is a new patch, or just recover the old patch
      */
-    void onLoadPatchListenerReceiveFail(File patchFile, int errorCode, boolean isUpgrade);
+    void onLoadPatchListenerReceiveFail(File patchFile, int errorCode);
 
     /**
      * we can only handle patch version change in the main process,
@@ -134,6 +133,7 @@ public interface LoadReporter {
      *                  {@code ShareConstants.ERROR_PACKAGE_CHECK_PATCH_TINKER_ID_NOT_FOUND}       can't find TINKER_PATCH in patch meta file
      *                  {@code ShareConstants.ERROR_PACKAGE_CHECK_TINKER_ID_NOT_EQUAL}             apk and patch's TINKER_PATCH value is not equal
      *                  {@code ShareConstants.ERROR_PACKAGE_CHECK_RESOURCE_META_CORRUPTED}         resource meta file's format check fail
+     *                  {@code ShareConstants.ERROR_PACKAGE_CHECK_TINKERFLAG_NOT_SUPPORT}          some patch file type is not supported for current tinkerFlag
      */
     void onLoadPackageCheckFail(File patchFile, int errorCode);
 

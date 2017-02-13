@@ -83,6 +83,7 @@ public class Configuration {
     public File             mOldApkFile;
     public File             mNewApkFile;
     public boolean          mIgnoreWarning;
+
     /**
      * lib config
      */
@@ -213,6 +214,7 @@ public class Configuration {
         mOutFolder = param.outFolder;
 
         mIgnoreWarning = param.ignoreWarning;
+
         mSevenZipPath = param.sevenZipPath;
         mPackageFields = param.configFields;
 
@@ -299,7 +301,8 @@ public class Configuration {
 
         String tempNewName = newApkName.substring(0, newApkName.indexOf(TypedValue.FILE_APK));
 
-        if (tempNewName.equals(tempOldName)) {
+        // Bugfix: For windows user, filename is case-insensitive.
+        if (tempNewName.equalsIgnoreCase(tempOldName)) {
             tempOldName += "-old";
             tempNewName += "-new";
         }

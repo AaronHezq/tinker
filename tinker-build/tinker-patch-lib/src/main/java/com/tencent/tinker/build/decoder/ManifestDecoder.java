@@ -17,7 +17,7 @@
 package com.tencent.tinker.build.decoder;
 
 
-import com.tencent.tinker.build.apkparser.AndroidManifest;
+import com.tencent.tinker.build.apkparser.AndroidParser;
 import com.tencent.tinker.build.patch.Configuration;
 import com.tencent.tinker.build.util.Logger;
 import com.tencent.tinker.build.util.TinkerPatchException;
@@ -42,8 +42,8 @@ public class ManifestDecoder extends BaseDecoder {
     public boolean patch(File oldFile, File newFile) throws IOException, TinkerPatchException {
         final boolean ignoreWarning = config.mIgnoreWarning;
         try {
-            AndroidManifest oldAndroidManifest = AndroidManifest.getAndroidManifest(oldFile);
-            AndroidManifest newAndroidManifest = AndroidManifest.getAndroidManifest(newFile);
+            AndroidParser oldAndroidManifest = AndroidParser.getAndroidManifest(oldFile);
+            AndroidParser newAndroidManifest = AndroidParser.getAndroidManifest(newFile);
             //check minSdkVersion
             int minSdkVersion = Integer.parseInt(oldAndroidManifest.apkMeta.getMinSdkVersion());
 
@@ -51,12 +51,12 @@ public class ManifestDecoder extends BaseDecoder {
                 if (config.mDexRaw) {
                     if (ignoreWarning) {
                         //ignoreWarning, just log
-                        Logger.e("Warning:ignoreWarning is true, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will be crash at some times", minSdkVersion);
+                        Logger.e("Warning:ignoreWarning is true, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will crash at some time", minSdkVersion);
                     } else {
-                        Logger.e("Warning:ignoreWarning is false, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will be crash at some times", minSdkVersion);
+                        Logger.e("Warning:ignoreWarning is false, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will crash at some time", minSdkVersion);
 
                         throw new TinkerPatchException(
-                            String.format("ignoreWarning is false, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will be crash at some times", minSdkVersion)
+                            String.format("ignoreWarning is false, but your old apk's minSdkVersion %d is below 14, you should set the dexMode to 'jar', otherwise, it will crash at some time", minSdkVersion)
                         );
                     }
                 }
@@ -76,11 +76,11 @@ public class ManifestDecoder extends BaseDecoder {
                 }
                 if (!found) {
                     if (ignoreWarning) {
-                        Logger.e("Warning:ignoreWarning is true, but we found a new AndroidComponent %s, it will be crash at some times", newComponentName);
+                        Logger.e("Warning:ignoreWarning is true, but we found a new AndroidComponent %s, it will crash at some time", newComponentName);
                     } else {
-                        Logger.e("Warning:ignoreWarning is false, but we found a new AndroidComponent %s, it will be crash at some times", newComponentName);
+                        Logger.e("Warning:ignoreWarning is false, but we found a new AndroidComponent %s, it will crash at some time", newComponentName);
                         throw new TinkerPatchException(
-                            String.format("ignoreWarning is false, but we found a new AndroidComponent %s, it will be crash at some times", newComponentName)
+                            String.format("ignoreWarning is false, but we found a new AndroidComponent %s, it will crash at some time", newComponentName)
                         );
                     }
                 }

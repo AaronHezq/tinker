@@ -33,7 +33,7 @@ import com.tencent.tinker.android.dex.SizeOf;
 import com.tencent.tinker.android.dex.StringData;
 import com.tencent.tinker.android.dex.TypeList;
 import com.tencent.tinker.android.dex.io.DexDataBuffer;
-import com.tencent.tinker.android.dx.util.IndexMap;
+import com.tencent.tinker.commons.dexpatcher.util.SparseIndexMap;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationSetRefListSectionDiffAlgorithm;
 import com.tencent.tinker.build.dexpatcher.algorithms.diff.AnnotationSetSectionDiffAlgorithm;
@@ -63,7 +63,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -137,10 +136,10 @@ public class DexPatchGenerator {
         this.oldDex = oldDex;
         this.newDex = newDex;
 
-        IndexMap oldToNewIndexMap = new IndexMap();
-        IndexMap oldToPatchedIndexMap = new IndexMap();
-        IndexMap newToPatchedIndexMap = new IndexMap();
-        IndexMap selfIndexMapForSkip = new IndexMap();
+        SparseIndexMap oldToNewIndexMap = new SparseIndexMap();
+        SparseIndexMap oldToPatchedIndexMap = new SparseIndexMap();
+        SparseIndexMap newToPatchedIndexMap = new SparseIndexMap();
+        SparseIndexMap selfIndexMapForSkip = new SparseIndexMap();
 
         additionalRemovingClassPatternSet = new HashSet<>();
 
